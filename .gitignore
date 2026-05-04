@@ -1,0 +1,12 @@
+target/
+*.class
+.mvn/
+mvnw
+mvnw.cmd
+.idea/
+.vscode/
+*.iml
+.DS_Store
+*.log
+.env
+application-local.properties
