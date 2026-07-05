@@ -2,43 +2,35 @@
 
 ## Descripción
 
-Microservicio encargado de gestionar los stands participantes de cada evento gastronómico dentro de ReadyStand.
+Microservicio encargado de administrar stands gastronómicos dentro de ReadyStand, incluyendo creación, actualización, activación, desactivación y consulta de stands asociados a eventos.
 
 ## Funcionalidades
 
-- Crear stands
-
-- Listar stands
-
-- Buscar stand por ID
-
-- Actualizar stand
-
-- Activar o desactivar stand
-
-- Asociar stand a evento
-
-- Listar stands por evento
-
-- Comunicación con microservicio de eventos
+* Crear stands
+* Listar stands
+* Buscar stand por ID
+* Actualizar stand
+* Asignar stand a evento
+* Activar stand
+* Desactivar stand
+* Consultar stands activos por evento
+* Comunicación con microservicio de eventos
 
 ## Tecnologías utilizadas
 
-- Java 21
-
-- Spring Boot
-
-- Spring Data JPA
-
-- Spring Validation
-
-- MySQL
-
-- Maven
-
-- Docker
-
-- Docker Compose
+* Java 21
+* Spring Boot
+* Spring Data JPA
+* Spring Validation
+* Spring Cloud OpenFeign
+* Springdoc OpenAPI (Swagger)
+* MySQL
+* H2 Database (Testing)
+* JUnit 5
+* Mockito
+* Maven
+* Docker
+* Docker Compose
 
 ## Ejecución del proyecto
 
@@ -46,38 +38,70 @@ Microservicio encargado de gestionar los stands participantes de cada evento gas
 docker compose up -d
 ```
 
+## Ejecución de pruebas
+
+```bash
+mvn test
+```
+
+## Swagger
+
+Disponible en:
+
+```text
+http://localhost:8083/doc/swagger-ui.html
+```
+
 ## Endpoints principales
 
--Obtener stands
+### Obtener stands
 
-GET /api/v2/stands
+GET /api/v3/stands
 
--Obtener stand por ID
+### Obtener stand por ID
 
-GET /api/v2/stands/{id}
+GET /api/v3/stands/{id}
 
--Crear stand
+### Crear stand
 
-POST /api/v2/stands
+POST /api/v3/stands
 
--Actualizar stand
+### Actualizar stand
 
-PUT /api/v2/stands/{id}
+PUT /api/v3/stands/{id}
 
--Activar o desactivar stand
+### Asignar stand a evento
 
-PATCH /api/v2/stands/{id}/estado
+PUT /api/v3/stands/{id}/evento?idEvento={idEvento}
 
--Obtener stands por evento
+### Activar stand
 
-GET /api/v2/stands/evento/{idEvento}
+PUT /api/v3/stands/{id}/activar
+
+### Desactivar stand
+
+PUT /api/v3/stands/{id}/desactivar
+
+### Stands activos por evento
+
+GET /api/v3/stands/evento/{idEvento}
+
+## Testing
+
+El proyecto incluye pruebas unitarias para las capas:
+
+* Modelo
+* Servicio
+* Repositorio
+* Controlador
+
+Todas las pruebas deben finalizar con BUILD SUCCESS.
 
 ## Validaciones
 
--Validación de evento existente
-
--Validación de campos obligatorios
-
--Validación de estados
-
--Manejo global de errores con Bean Validation
+* Validación de campos obligatorios del stand
+* Validación de ID de evento
+* Validación de evento existente
+* Validación de estado del evento asociado
+* Validación de stands inexistentes
+* Manejo global de errores con Bean Validation

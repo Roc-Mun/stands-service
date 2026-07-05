@@ -46,38 +46,12 @@ public class StandService {
 
     public StandDTO crearStand(StandCreateDTO dto) {
 
-        EventoDTO evento;
+        EventoDTO evento = obtenerEventoDesdeServicio(dto.getIdEvento());
 
-        try {
-
-            log.info("Consultando evento id={}", dto.getIdEvento());
-
-            evento = eventoClient.obtenerEventoPorId(dto.getIdEvento());
-
-            log.info("Evento encontrado: {}", evento.getNombre());
-
-        } catch (FeignException.NotFound e) {
-
-            log.warn("Evento id={} no existe", dto.getIdEvento());
-
-            throw new RecursoNoEncontradoException(
-                    "Evento no encontrado");
-
-        } catch (FeignException e) {
-
-            log.error("Error al consultar servicio Eventos: {}",
-                    e.getMessage());
-
-            throw new ServicioNoDisponibleException(
-                    "Servicio de eventos no disponible");
-        }
-
-        if (!"publicado".equalsIgnoreCase(evento.getEstado())
-                && !"iniciado".equalsIgnoreCase(evento.getEstado())) {
-
-            throw new EstadoInvalidoException(
-                    "El evento no permite registrar stands");
-        }
+        validarEventoPermiteStands(
+                evento,
+                "El evento no permite registrar stands"
+        );
 
         Stand stand = new Stand();
 
@@ -89,8 +63,7 @@ public class StandService {
 
         Stand guardado = repository.save(stand);
 
-        log.info("Stand creado exitosamente id={}",
-                guardado.getIdStand());
+        log.info("Stand creado exitosamente id={}", guardado.getIdStand());
 
         return toDto(guardado);
     }
@@ -101,42 +74,14 @@ public class StandService {
 
     public List<StandDTO> listarStandsPorEvento(Long idEvento) {
 
-        EventoDTO evento;
+        EventoDTO evento = obtenerEventoDesdeServicio(idEvento);
 
-        try {
+        validarEventoPermiteStands(
+                evento,
+                "El evento no está disponible"
+        );
 
-            log.info("Consultando evento id={}", idEvento);
-
-            evento = eventoClient.obtenerEventoPorId(idEvento);
-
-            log.info("Evento encontrado: {}", evento.getNombre());
-
-        } catch (FeignException.NotFound e) {
-
-            log.warn("Evento id={} no existe", idEvento);
-
-            throw new RecursoNoEncontradoException(
-                    "Evento no encontrado");
-
-        } catch (FeignException e) {
-
-            log.error("Error al consultar servicio Eventos: {}",
-                    e.getMessage());
-
-            throw new ServicioNoDisponibleException(
-                    "Servicio de eventos no disponible");
-        }
-
-        if (!"publicado".equalsIgnoreCase(evento.getEstado())
-                && !"iniciado".equalsIgnoreCase(evento.getEstado())) {
-
-            throw new EstadoInvalidoException(
-                    "El evento no está disponible");
-        }
-
-        return repository.findByIdEventoAndEstado(
-                        idEvento,
-                        "activo")
+        return repository.findByIdEventoAndEstado(idEvento, "activo")
                 .stream()
                 .map(this::toDto)
                 .toList();
@@ -157,26 +102,26 @@ public class StandService {
         return toDto(actualizarEntidad(id, datos));
     }
 
-    public StandDTO asignarStandAEvento(
-            Long idStand,
-            Long idEvento) {
+    public StandDTO asignarStandAEvento(Long idStand, Long idEvento) {
 
-        eventoClient.obtenerEventoPorId(idEvento);
+        EventoDTO evento = obtenerEventoDesdeServicio(idEvento);
+
+        validarEventoPermiteStands(
+                evento,
+                "El evento no permite registrar stands"
+        );
 
         Stand stand = obtenerEntidadPorId(idStand);
 
         stand.setIdEvento(idEvento);
 
-        return toDto(repository.save(stand));
-    }
+        Stand actualizado = repository.save(stand);
 
-    public StandDTO desactivarStand(Long id) {
+        log.info("Stand id={} asignado al evento id={}",
+                actualizado.getIdStand(),
+                idEvento);
 
-        Stand stand = obtenerEntidadPorId(id);
-
-        stand.setEstado("inactivo");
-
-        return toDto(repository.save(stand));
+        return toDto(actualizado);
     }
 
     public StandDTO activarStand(Long id) {
@@ -185,7 +130,65 @@ public class StandService {
 
         stand.setEstado("activo");
 
-        return toDto(repository.save(stand));
+        Stand actualizado = repository.save(stand);
+
+        log.info("Stand activado id={}", actualizado.getIdStand());
+
+        return toDto(actualizado);
+    }
+
+    public StandDTO desactivarStand(Long id) {
+
+        Stand stand = obtenerEntidadPorId(id);
+
+        stand.setEstado("inactivo");
+
+        Stand actualizado = repository.save(stand);
+
+        log.info("Stand desactivado id={}", actualizado.getIdStand());
+
+        return toDto(actualizado);
+    }
+
+    private EventoDTO obtenerEventoDesdeServicio(Long idEvento) {
+
+        try {
+
+            log.info("Consultando evento id={}", idEvento);
+
+            EventoDTO evento = eventoClient.obtenerEventoPorId(idEvento);
+
+            log.info("Evento encontrado id={}, estado={}",
+                    evento.getIdEvento(),
+                    evento.getEstado());
+
+            return evento;
+
+        } catch (FeignException.NotFound e) {
+
+            log.warn("Evento id={} no existe", idEvento);
+
+            throw new RecursoNoEncontradoException("Evento no encontrado");
+
+        } catch (FeignException e) {
+
+            log.error("Error al consultar servicio Eventos: {}",
+                    e.getMessage());
+
+            throw new ServicioNoDisponibleException(
+                    "Servicio de eventos no disponible");
+        }
+    }
+
+    private void validarEventoPermiteStands(
+            EventoDTO evento,
+            String mensajeError) {
+
+        if (!"publicado".equalsIgnoreCase(evento.getEstado())
+                && !"iniciado".equalsIgnoreCase(evento.getEstado())) {
+
+            throw new EstadoInvalidoException(mensajeError);
+        }
     }
 
     private Stand obtenerEntidadPorId(Long id) {
